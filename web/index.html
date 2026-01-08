@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑猫投诉数据采集助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #f3f4f6; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 24px; margin-bottom: 24px; }
+        .btn { transition: all 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <header class="mb-8 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white p-3 rounded-lg">
+                    <i class="fas fa-cat text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">黑猫投诉数据采集助手</h1>
+                    <p class="text-gray-500 text-sm">高效、稳定的投诉数据自动化采集工具</p>
+                </div>
+            </div>
+            <div id="connectionStatus" class="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                服务运行中
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Column: Controls -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Login Status Card -->
+                <div class="card border-l-4 border-blue-500">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-user-shield text-blue-500"></i> 会话管理
+                    </h2>
+                    <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-blue-50 p-4 rounded-lg mb-4">
+                        <div class="flex items-center gap-3">
+                            <div id="loginIcon" class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                                <i class="fas fa-user-slash"></i>
+                            </div>
+                            <div>
+                                <div id="loginStatusText" class="font-medium text-gray-700">未检测到登录状态</div>
+                                <div id="loginStatusDesc" class="text-xs text-gray-500">请先登录以确保采集稳定性</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="openLogin()" class="btn flex-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm">
+                            <i class="fas fa-external-link-alt mr-1"></i> 打开登录页
+                        </button>
+                        <button onclick="saveLogin()" class="btn flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm">
+                            <i class="fas fa-save mr-1"></i> 保存会话状态
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Configuration Card -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <i class="fas fa-sliders-h text-gray-700"></i> 采集配置
+                    </h2>
+                    
+                    <!-- Mode Tabs -->
+                    <div class="flex border-b border-gray-200 mb-6">
+                        <button id="tab_kw" onclick="switchTab('kw')" class="pb-3 px-4 text-blue-600 border-b-2 border-blue-600 font-medium text-sm transition-colors">
+                            <i class="fas fa-search mr-1"></i> 关键词采集
+                        </button>
+                        <button id="tab_url" onclick="switchTab('url')" class="pb-3 px-4 text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors">
+                            <i class="fas fa-link mr-1"></i> 指定链接采集
+                        </button>
+                    </div>
+
+                    <!-- Keyword Input -->
+                    <div id="panel_kw" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">关键词 (支持多词，逗号分隔)</label>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="kw" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="例如：美团, 饿了么, 顺丰速运">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">类型参数 (t)</label>
+                            <input type="number" id="t" value="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="默认为 1">
+                            <p class="text-xs text-gray-500 mt-1">通常无需修改，默认 1 代表综合排序</p>
+                        </div>
+                    </div>
+
+                    <!-- URL Input -->
+                    <div id="panel_url" class="space-y-4 hidden">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">目标页面 URL</label>
+                            <div class="relative">
+                                <i class="fas fa-globe absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="link" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="https://tousu.sina.com.cn/company/view/...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-gray-100">
+                        <!-- Headless Mode -->
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">无头模式 (Headless)</label>
+                                <p class="text-xs text-gray-500">隐藏浏览器窗口运行</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="headless" checked class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Fast Mode -->
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">极速模式</label>
+                                <p class="text-xs text-gray-500">拦截图片/字体以加速</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="fast" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Interval -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">滚动间隔 (秒)</label>
+                            <input type="number" id="interval" value="2.5" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        </div>
+
+                        <!-- Format -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">输出格式</label>
+                            <select id="fmt" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                                <option value="both">JSON + CSV (推荐)</option>
+                                <option value="json">仅 JSON</option>
+                                <option value="csv">仅 CSV</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-8 flex gap-4">
+                        <button id="btnStart" onclick="startCrawl()" class="btn flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-bold shadow-md flex items-center justify-center gap-2">
+                            <i class="fas fa-play"></i> 开始采集
+                        </button>
+                        <button id="btnStop" onclick="stopCrawl()" class="btn flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2" disabled>
+                            <i class="fas fa-stop"></i> 停止采集
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Status -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Progress Card -->
+                <div class="card h-full flex flex-col">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-green-600"></i> 任务监控
+                    </h2>
+                    
+                    <div class="flex-1 space-y-6">
+                        <!-- Status Badge -->
+                        <div class="bg-gray-50 rounded-lg p-4 text-center">
+                            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">当前状态</div>
+                            <div id="taskStatus" class="text-lg font-bold text-gray-800">空闲</div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-blue-50 p-3 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-blue-600" id="count">0</div>
+                                <div class="text-xs text-blue-800">已采集条数</div>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-purple-600" id="loops">0</div>
+                                <div class="text-xs text-purple-800">滚动次数</div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar (Optional context) -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>任务进度</span>
+                                <span><span id="done">0</span> / <span id="total">0</span></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Current Action -->
+                        <div>
+                            <div class="text-xs text-gray-500 mb-1">正在处理</div>
+                            <div id="current" class="text-sm bg-gray-100 p-2 rounded text-gray-700 truncate min-h-[2.5rem] flex items-center">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Output Files -->
+                    <div class="mt-6 pt-6 border-t border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">输出文件</h3>
+                        <div id="outputFiles" class="text-xs text-gray-500 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <i class="far fa-file"></i> <span id="outCsv" class="truncate">等待生成...</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="far fa-file-code"></i> <span id="outJson" class="truncate">等待生成...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (Hidden by default) -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+        <i id="toastIcon" class="fas fa-info-circle"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <script>
+        // State
+        let isRunning = false;
+        let pollTimer = null;
+        let currentMode = 'kw'; // 'kw' or 'url'
+
+        // Initialization
+        window.addEventListener('load', () => {
+            checkLoginStatus();
+            poll(); // Start polling immediately to recover state if refreshing page
+        });
+
+        // Tab Switching
+        function switchTab(mode) {
+            currentMode = mode;
+            const tabKw = document.getElementById('tab_kw');
+            const tabUrl = document.getElementById('tab_url');
+            const panelKw = document.getElementById('panel_kw');
+            const panelUrl = document.getElementById('panel_url');
+
+            if (mode === 'kw') {
+                tabKw.className = "pb-3 px-4 text-blue-600 border-b-2 border-blue-600 font-medium text-sm transition-colors";
+                tabUrl.className = "pb-3 px-4 text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors";
+                panelKw.classList.remove('hidden');
+                panelUrl.classList.add('hidden');
+            } else {
+                tabKw.className = "pb-3 px-4 text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors";
+                tabUrl.className = "pb-3 px-4 text-blue-600 border-b-2 border-blue-600 font-medium text-sm transition-colors";
+                panelKw.classList.add('hidden');
+                panelUrl.classList.remove('hidden');
+            }
+        }
+
+        // Login Functions
+        function checkLoginStatus() {
+            fetch('/has_login').then(r => r.json()).then(j => {
+                const icon = document.getElementById('loginIcon');
+                const text = document.getElementById('loginStatusText');
+                const desc = document.getElementById('loginStatusDesc');
+                
+                if (j.ok && j.has) {
+                    icon.className = "w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600";
+                    icon.innerHTML = '<i class="fas fa-check"></i>';
+                    text.innerText = "已登录";
+                    text.className = "font-medium text-green-700";
+                    desc.innerText = "会话状态有效：" + (j.path || '').split('/').pop();
+                } else {
+                    icon.className = "w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500";
+                    icon.innerHTML = '<i class="fas fa-user-slash"></i>';
+                    text.innerText = "未检测到登录状态";
+                    text.className = "font-medium text-gray-700";
+                    desc.innerText = "请先登录以确保采集稳定性";
+                }
+            }).catch(() => {});
+        }
+
+        function openLogin() {
+            showToast('正在打开登录浏览器...', 'info');
+            fetch('/open_login').then(r => r.json()).then(j => {
+                if (j.ok) {
+                    if (j.has) {
+                        showToast('已检测到有效登录状态', 'success');
+                        checkLoginStatus();
+                    } else {
+                        showToast('登录窗口已打开，请完成登录', 'info');
+                        document.getElementById('loginStatusDesc').innerText = "请在弹出的浏览器中完成登录，然后点击“保存会话状态”";
+                    }
+                } else {
+                    showToast('操作失败: ' + j.err, 'error');
+                }
+            }).catch(e => showToast('请求失败: ' + e, 'error'));
+        }
+
+        function saveLogin() {
+            fetch('/save_login').then(r => r.json()).then(j => {
+                if (j.ok) {
+                    showToast('登录状态已保存', 'success');
+                    checkLoginStatus();
+                } else {
+                    showToast('保存失败: ' + j.err, 'error');
+                }
+            }).catch(e => showToast('请求失败: ' + e, 'error'));
+        }
+
+        // Crawl Control
+        function startCrawl() {
+            if (isRunning) return;
+
+            const headless = document.getElementById('headless').checked ? '1' : '0';
+            const interval = document.getElementById('interval').value;
+            const fmt = document.getElementById('fmt').value;
+            const fast = document.getElementById('fast').checked ? '1' : '0';
+
+            let url = '';
+            if (currentMode === 'kw') {
+                const kw = document.getElementById('kw').value;
+                if (!kw) { showToast('请输入关键词', 'error'); return; }
+                const t = document.getElementById('t').value;
+                url = `/crawl?kw=${encodeURIComponent(kw)}&t=${encodeURIComponent(t)}&headless=${headless}&interval=${encodeURIComponent(interval)}&fmt=${encodeURIComponent(fmt)}&fast=${fast}`;
+            } else {
+                const link = document.getElementById('link').value;
+                if (!link) { showToast('请输入目标链接', 'error'); return; }
+                url = `/crawl_url?url=${encodeURIComponent(link)}&headless=${headless}&interval=${encodeURIComponent(interval)}&fmt=${encodeURIComponent(fmt)}&fast=${fast}`;
+            }
+
+            setRunningState(true);
+            document.getElementById('taskStatus').innerText = "正在初始化...";
+            
+            fetch(url).then(r => r.json()).then(j => {
+                if (j.ok) {
+                    showToast('任务已启动', 'success');
+                    poll();
+                } else {
+                    showToast('启动失败: ' + j.err, 'error');
+                    setRunningState(false);
+                    document.getElementById('taskStatus').innerText = "启动失败";
+                }
+            }).catch(e => {
+                showToast('请求异常: ' + e, 'error');
+                setRunningState(false);
+            });
+        }
+
+        function stopCrawl() {
+            fetch('/stop').then(r => r.json()).then(j => {
+                if (j.ok) {
+                    showToast('已发送停止请求，正在保存数据...', 'info');
+                    document.getElementById('taskStatus').innerText = "正在停止...";
+                    document.getElementById('btnStop').disabled = true;
+                } else {
+                    showToast('停止失败: ' + j.err, 'error');
+                }
+            }).catch(e => showToast('请求失败: ' + e, 'error'));
+        }
+
+        // Polling & UI Update
+        function poll() {
+            if (pollTimer) return;
+            pollTimer = setInterval(() => {
+                fetch('/progress').then(r => r.json()).then(j => {
+                    updateUI(j);
+                }).catch(() => {});
+            }, 1000);
+        }
+
+        function updateUI(data) {
+            // Update counts
+            if (data.count !== undefined) document.getElementById('count').innerText = data.count;
+            if (data.loops !== undefined) document.getElementById('loops').innerText = data.loops; // loops added theoretically if backend supports, else undefined
+            
+            // Progress
+            const done = data.done || 0;
+            const total = data.total || 0;
+            document.getElementById('done').innerText = done;
+            document.getElementById('total').innerText = total;
+            
+            if (total > 0) {
+                const pct = Math.min(100, Math.round((done / total) * 100));
+                document.getElementById('progressBar').style.width = pct + '%';
+            }
+
+            // Current task
+            if (data.current) document.getElementById('current').innerText = data.current;
+
+            // Running state
+            if (data.running) {
+                if (!isRunning) setRunningState(true);
+                document.getElementById('taskStatus').innerText = "正在采集...";
+                document.getElementById('taskStatus').className = "text-lg font-bold text-blue-600 animate-pulse";
+            } else {
+                if (isRunning) {
+                    // Just finished
+                    setRunningState(false);
+                    if (data.ok) {
+                        document.getElementById('taskStatus').innerText = "采集完成";
+                        document.getElementById('taskStatus').className = "text-lg font-bold text-green-600";
+                        showToast('采集任务已完成', 'success');
+                    } else {
+                        document.getElementById('taskStatus').innerText = "已停止/未运行";
+                        document.getElementById('taskStatus').className = "text-lg font-bold text-gray-800";
+                    }
+                }
+                
+                // If backend is idle, we can clear the timer if we want, 
+                // but keeping it running allows re-connection detection.
+                // For this simple app, we keep polling or stop if idle for too long.
+                // Here we keep polling to catch state changes if multiple tabs open.
+            }
+
+            // Output files
+            if (data.csv) document.getElementById('outCsv').innerText = data.csv.split('/').pop();
+            if (data.json) document.getElementById('outJson').innerText = data.json.split('/').pop();
+        }
+
+        function setRunningState(running) {
+            isRunning = running;
+            const btnStart = document.getElementById('btnStart');
+            const btnStop = document.getElementById('btnStop');
+            const inputs = document.querySelectorAll('input, select');
+
+            if (running) {
+                btnStart.disabled = true;
+                btnStart.classList.add('opacity-50', 'cursor-not-allowed');
+                btnStop.disabled = false;
+                btnStop.classList.remove('opacity-50', 'cursor-not-allowed');
+                inputs.forEach(el => el.disabled = true);
+            } else {
+                btnStart.disabled = false;
+                btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnStop.disabled = true;
+                btnStop.classList.add('opacity-50', 'cursor-not-allowed');
+                inputs.forEach(el => el.disabled = false);
+            }
+        }
+
+        // Toast Notification
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const text = document.getElementById('toastMsg');
+
+            text.innerText = msg;
+            
+            // Reset classes
+            toast.className = "fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50 flex items-center gap-3";
+            
+            if (type === 'success') {
+                toast.classList.add('bg-green-600', 'text-white');
+                icon.className = "fas fa-check-circle";
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-600', 'text-white');
+                icon.className = "fas fa-exclamation-circle";
+            } else {
+                toast.classList.add('bg-gray-800', 'text-white');
+                icon.className = "fas fa-info-circle";
+            }
+
+            // Show
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            // Hide after 3s
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
