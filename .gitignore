@@ -34,10 +34,13 @@ ENV/
 *~
 
 # Data files
-data/
-*.json
-*.ndjson
-*.csv
+data/*.json
+data/*.ndjson
+data/*.csv
+
+# Keep example data
+!data/example_data.json
+!data/example_data_structured.csv
 
 # Logs
 output/
