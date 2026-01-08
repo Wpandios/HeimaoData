@@ -25,6 +25,20 @@
 - 提供友好的 Web 可视化界面
 - 支持多关键词批量采集
 
+## 界面展示
+
+### 主页界面
+
+![主页界面](docs/screenshots/01_homepage.png)
+
+### 登录状态管理
+
+![登录状态](docs/screenshots/02_login_status.png)
+
+### 关键词输入
+
+![关键词输入](docs/screenshots/03_keyword_input.png)
+
 ## 输出格式
 
 ### 原始数据格式
